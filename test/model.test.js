@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { N, E, S, W, route, variants, place, validatePiece } from '../src/model.js';
+import { N, E, S, W, route, variants, place, validatePiece, towerCells, trackCells, clashes } from '../src/model.js';
 import { pieces } from '../src/inventory.js';
 
 const port = (x, y, level, side) => ({ x, y, level, side });
@@ -26,6 +26,13 @@ test('clear and white drop from either open side', () => {
     assert.deepEqual(route({ t, r: E }, N), { blocked: true });
     assert.deepEqual(route({ t, r: E }, 'top'), { down: true });
   }
+});
+
+test('orange stops a rolling marble but sends a dropped one out its open side', () => {
+  const b = { t: 'orange', r: W };
+  assert.deepEqual(route(b, W), { stop: true });
+  assert.deepEqual(route(b, E), { blocked: true });
+  assert.deepEqual(route(b, 'top'), { exit: W });
 });
 
 test('flat straight bridges two squares and works both ways', () => {
@@ -82,4 +89,28 @@ test('every inventory entry is well formed', () => {
 test('validation catches bad track definitions', () => {
   assert.ok(validatePiece({ id: 'x', name: 'x', kind: 'track', shape: 'curve', forward: 1, drop: 0, own: 1 }).length);
   assert.ok(validatePiece({ id: 'x', name: 'x', kind: 'track', shape: 'straight', forward: 2, drop: -1, own: 1 }).length);
+});
+
+const straight2 = { id: 's', name: 's', kind: 'track', shape: 'straight', forward: 2, drop: 0, own: 1 };
+
+test('track can pass over a shorter tower but not through a taller one', () => {
+  const from = port(0, 0, 2, E);
+  const t = trackCells(from, place(variants(straight2)[0], from)); // hangs over (1,0) at level 2
+  assert.deepEqual(clashes(t, towerCells(1, 0, 2)), []);
+  assert.deepEqual(clashes(t, towerCells(1, 0, 3)), ['1,0,2']);
+});
+
+test('tracks can cross at different levels but not the same one', () => {
+  const a0 = port(0, 1, 2, E), b0 = port(1, 0, 1, S), c0 = port(1, 0, 2, S);
+  const a = trackCells(a0, place(variants(straight2)[0], a0)); // over (1,1) at level 2
+  const b = trackCells(b0, place(variants(straight2)[0], b0)); // over (1,1) at level 1
+  const c = trackCells(c0, place(variants(straight2)[0], c0)); // over (1,1) at level 2
+  assert.deepEqual(clashes(a, b), []);
+  assert.deepEqual(clashes(a, c), ['1,1,2']);
+});
+
+test('a ramp fills both levels it passes between', () => {
+  const ramp = { id: 'r', name: 'r', kind: 'track', shape: 'straight', forward: 2, drop: 1, own: 1 };
+  const from = port(0, 0, 3, E);
+  assert.deepEqual(trackCells(from, place(variants(ramp)[0], from)), ['1,0,2', '1,0,3']);
 });

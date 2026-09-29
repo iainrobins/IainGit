@@ -19,10 +19,12 @@ const LOCAL = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 
 // `open` lists the open sides relative to the block's rotation r.
 // Every block is one level tall. Track pieces clip into open sides only, never the top.
+// Orange has one open side: a marble rolling in stops there, and a marble falling in from a
+// drop block above leaves by that side (used under a drop to send it one way).
 export const BLOCKS = {
   blue:   { name: 'Blue straight block', open: [0, 2], action: 'through' },
   red:    { name: 'Red turn block',      open: [0, 1], action: 'turn' },
-  orange: { name: 'Orange dead end',     open: [0],    action: 'stop' },    // TODO confirm: one open side?
+  orange: { name: 'Orange end block',    open: [0],    action: 'end' },
   clear:  { name: 'Clear drop block',    open: [0, 2], action: 'drop' },
   white:  { name: 'White drop block',    open: [0, 2], action: 'drop' },
 };
@@ -40,7 +42,7 @@ export function route(block, from) {
   const open = openSides(block);
   if (from === 'top') {
     if (def.action === 'drop') return { down: true };
-    if (def.action === 'stop') return { stop: true };
+    if (def.action === 'end') return { exit: open[0] };
     // UNVERIFIED: which side a blue/red block sends a marble that falls in from above.
     // Assume the first open side, as the prototype did.
     return { exit: open[0] };
@@ -123,12 +125,40 @@ export function place(v, from) {
   };
 }
 
+// ---------------------------------------------------------------- space
+
+// The board is shared in 3D: a square can hold a short tower with track passing over it,
+// and tracks can cross at different levels. Space is tracked as "x,y,level" cells.
+export const cellKey = (x, y, level) => `${x},${y},${level}`;
+
+// A tower of h blocks fills levels 0..h-1 of its square (a special on top adds its height).
+export function towerCells(x, y, height) {
+  return Array.from({ length: height }, (_, l) => cellKey(x, y, l));
+}
+
+// A placed track fills every level between its two ends over each square it hangs across.
+// ASSUMPTION: one level of clearance is enough for another track or a tower top below it.
+export function trackCells(from, placed) {
+  const hi = Math.max(from.level, placed.to.level), lo = Math.min(from.level, placed.to.level);
+  const out = [];
+  for (const [x, y] of placed.covers) for (let l = lo; l <= hi; l++) out.push(cellKey(x, y, l));
+  return out;
+}
+
+// Keys found in more than one of the given cell lists.
+export function clashes(...lists) {
+  const seen = new Set(), dup = new Set();
+  for (const list of lists) for (const k of new Set(list)) (seen.has(k) ? dup : seen).add(k);
+  return [...dup];
+}
+
 // ---------------------------------------------------------------- specials
 
 // A special definition:
 //   footprint  [[f, s], ...] squares it stands on (local frame, entry side facing back)
 //   height     levels it takes up
 //   stackable  true if blocks or other pieces can be built on top of it
+//              (every special can itself stand on top of a tower)
 //   ports      [{ f, s, level, side, role: 'in' | 'out' }]   level is relative to its base
 //   behaviour  free text until we model it (lift, split, spinner, ...)
 
