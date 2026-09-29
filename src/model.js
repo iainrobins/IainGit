@@ -60,7 +60,8 @@ export function route(block, from) {
 
 // A track definition, measured tower to tower with the marble heading forward out of the
 // entry tower:
-//   shape    'straight' | 'curve' | 'uturn'
+//   shape    'straight' | 'curve' | 'uturn' | 'loop'
+//            (a loop leaves a tower and comes back into the same side of it, lower down)
 //   forward  squares forward from the entry tower to the exit tower
 //   right    squares right to the exit tower (negative = left). 0 for straights.
 //   drop     levels lower at the exit tower (0 = flat)
@@ -84,6 +85,9 @@ function baseVariant(def) {
   } else if (def.shape === 'uturn') {
     exit = [0, R]; heading = 2;
     for (let s = 0; s <= Math.abs(R); s++) covers.push([1, g * s]);
+  } else if (def.shape === 'loop') {
+    exit = [0, 0]; heading = 2;
+    covers.push([1, 0]);
   } else {
     throw new Error(`Unknown track shape "${def.shape}" on ${def.id}`);
   }
@@ -170,12 +174,15 @@ export function validatePiece(def) {
   need(typeof def.id === 'string' && def.id, 'needs an id');
   need(typeof def.name === 'string' && def.name, 'needs a name');
   need(def.own === null || (Number.isInteger(def.own) && def.own >= 0), 'own must be a whole number or null (unknown)');
-  if (def.kind === 'track') {
-    need(['straight', 'curve', 'uturn'].includes(def.shape), 'shape must be straight, curve or uturn');
+  if (def.kind === 'track' && def.unverified) {
+    need(['straight', 'curve', 'uturn', 'loop', undefined].includes(def.shape), 'unknown shape');
+  } else if (def.kind === 'track') {
+    need(['straight', 'curve', 'uturn', 'loop'].includes(def.shape), 'shape must be straight, curve, uturn or loop');
     need(Number.isInteger(def.drop) && def.drop >= 0, 'drop must be a whole number, 0 or more');
-    need(Number.isInteger(def.forward) && def.forward >= (def.shape === 'uturn' ? 0 : 1), 'forward must be a whole number of squares');
+    if (def.shape === 'loop') need(def.drop > 0 && !def.forward && !def.right, 'a loop comes back into its own tower, lower down');
+    else need(Number.isInteger(def.forward) && def.forward >= (def.shape === 'uturn' ? 0 : 1), 'forward must be a whole number of squares');
     if (def.shape === 'straight') need(!def.right, 'a straight has no sideways reach');
-    else need(Number.isInteger(def.right) && def.right !== 0, 'a curve or U-turn needs a sideways reach');
+    else if (def.shape !== 'loop') need(Number.isInteger(def.right) && def.right !== 0, 'a curve or U-turn needs a sideways reach');
   } else if (def.kind === 'special') {
     if (!def.unverified) {
       need(Array.isArray(def.footprint) && def.footprint.length > 0, 'needs a footprint');

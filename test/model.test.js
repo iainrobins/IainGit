@@ -114,3 +114,10 @@ test('a ramp fills both levels it passes between', () => {
   const from = port(0, 0, 3, E);
   assert.deepEqual(trackCells(from, place(variants(ramp)[0], from)), ['1,0,2', '1,0,3']);
 });
+
+test('a loop comes back into the same side of its tower, one level down', () => {
+  const curl = { id: 'l', name: 'l', kind: 'track', shape: 'loop', drop: 1, own: 1 };
+  const out = place(variants(curl)[0], port(4, 7, 2, E));
+  assert.deepEqual(out.to, port(4, 7, 1, E));
+  assert.deepEqual(out.covers, [[5, 7]]);
+});
