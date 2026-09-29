@@ -7,7 +7,8 @@
 // Elevator. Names below describe the shape; `colors` lists what we've seen per set.
 // Geometry comes from the top-down board maps in the Corkscrew level-3 manual (steps 3-1..3-12).
 // `seen` records where a measurement came from. `unverified: true` means we only know the name.
-// `ask` holds what we still need from Iain. Iain's piece-check answers (29 Sep 2026) are folded in.
+// `ask` holds what we still need from Iain. `handedUnknown` marks a drop piece whose turning
+// direction (right or left, going downhill) isn't confirmed; the generator leaves those out. Iain's piece-check answers (29 Sep 2026) are folded in.
 
 const SETS = ['adventure', 'corkscrew', 'sky'];
 
@@ -38,14 +39,14 @@ export const pieces = [
     sets: { adventure: 12, corkscrew: 3, sky: 1 }, seen: '3-4 G7→F8, 3-7 C2→D3, 3-9 C4→D5' },
   { code: 'T-04', name: 'Wide curve', kind: 'track', shape: 'curve', forward: 2, right: 2, drop: 0, checked: true,
     sets: { adventure: 4, corkscrew: 4, sky: 5 }, seen: '3-6 A5→C7, 3-11 A5→C7' },
-  { code: 'T-27', name: 'Elevator feed curve', kind: 'track', shape: 'curve', forward: 1, right: 1, drop: 1, checked: true,
+  { code: 'T-27', name: 'Elevator feed curve', kind: 'track', shape: 'curve', forward: 1, right: 1, drop: 1, checked: true, handedUnknown: true,
     sets: { adventure: 0, corkscrew: 0, sky: 1 }, note: 'Used to get marbles into the elevator.',
     ask: 'It drops, so it only works one way. Does it turn right or left as the marble goes down it?' },
   { code: 'T-05', name: 'Small U-turn', kind: 'track', shape: 'uturn', forward: 0, right: 1, drop: 0, checked: true,
     sets: { adventure: 2, corkscrew: 1, sky: 0 }, seen: '3-4 G7↔H7' },
   { code: 'T-02', name: 'Big U-turn', kind: 'track', shape: 'uturn', forward: 0, right: 2, drop: 0, checked: true,
     sets: { adventure: 3, corkscrew: 1, sky: 4 }, seen: '3-3 C8↔C10' },
-  { code: 'T-01', name: 'Big sloped U-turn', kind: 'track', shape: 'uturn', forward: 0, right: 2, drop: 1, checked: true,
+  { code: 'T-01', name: 'Big sloped U-turn', kind: 'track', shape: 'uturn', forward: 0, right: 2, drop: 1, checked: true, handedUnknown: true,
     sets: { adventure: 3, corkscrew: 1, sky: 1 }, seen: '3-8 from E6',
     ask: 'It drops, so it only works one way. Does it turn right or left as the marble goes down it?' },
   { code: 'T-17', name: 'Curl', kind: 'track', shape: 'loop', right: 1, drop: 1, checked: true,
