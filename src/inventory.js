@@ -14,10 +14,8 @@ const SETS = ['adventure', 'corkscrew', 'sky'];
 export const blocks = [
   { code: 'B-01', color: 'blue',   name: 'Blue straight block', sets: { adventure: 40, corkscrew: null, sky: 31 } },
   { code: 'B-02', color: 'orange', name: 'Orange end block',    sets: { adventure: 22, corkscrew: null, sky: 11 } },
-  { code: 'B-03', color: 'white',  name: 'White drop block',    sets: { adventure: 12, corkscrew: null, sky: 23 },
-  },
-  { code: 'B-04', color: 'clear?', name: 'Drop block (Corkscrew)',    sets: { adventure: 0,  corkscrew: null, sky: 0 },
-    ask: 'Adventure and Sky Elevator both call the white drop block B-03, but Corkscrew uses B-04. Is B-04 the clear block?' },
+  { code: 'B-03', color: 'white',  name: 'White drop block',    sets: { adventure: 12, corkscrew: null, sky: 23 } },
+  { code: 'B-04', color: 'clear',  name: 'Clear drop block',    sets: { adventure: 0,  corkscrew: null, sky: 0 } },
   { code: 'B-05', color: 'red',    name: 'Red turn block',      sets: { adventure: 0,  corkscrew: null, sky: 6 } },
 ];
 
