@@ -121,3 +121,10 @@ test('a loop comes back into the same side of its tower, one level down', () => 
   assert.deepEqual(out.to, port(4, 7, 1, E));
   assert.deepEqual(out.covers, [[5, 7]]);
 });
+
+test('every count is known for all three sets', async () => {
+  const { blocks, plates } = await import('../src/inventory.js');
+  const all = [...blocks, ...plates, ...pieces];
+  const unknown = all.filter((p) => Object.values(p.sets).some((n) => n == null)).map((p) => p.code);
+  assert.deepEqual(unknown, []);
+});
