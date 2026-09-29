@@ -48,9 +48,9 @@ export const pieces = [
   { code: 'T-01', name: 'Big sloped U-turn', kind: 'track', shape: 'uturn', forward: 0, right: 2, drop: 1, checked: true,
     sets: { adventure: 3, corkscrew: 1, sky: 1 }, seen: '3-8 from E6',
     ask: 'It drops, so it only works one way. Does it turn right or left as the marble goes down it?' },
-  { code: 'T-17', name: 'Curl', kind: 'track', shape: 'loop', drop: 1, checked: true,
-    sets: { adventure: 0, corkscrew: 3, sky: 2 }, seen: '3-6 H5, 3-10 C7, 3-11 A5',
-    note: 'Leaves a block, curls round, and comes back into the same block one level lower.' },
+  { code: 'T-17', name: 'Curl', kind: 'track', shape: 'loop', right: 1, drop: 1, checked: true,
+    sets: { adventure: 0, corkscrew: 3, sky: 2 }, seen: '3-6 H5, 3-10 C7, 3-11 A5 (all curl to the right)',
+    note: 'Leaves a block, curls round the corner, and comes back into the same tower one level lower, through the side perpendicular to the one it left by.' },
   { code: 'T-15', name: 'Long ramp', kind: 'track', shape: 'straight', forward: 4, drop: 3,
     sets: { adventure: 0, corkscrew: 1, sky: 0 }, seen: '3-9 D5→H5', guess: true, ask: 'How many levels does it drop?' },
 

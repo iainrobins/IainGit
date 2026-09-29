@@ -115,11 +115,19 @@ test('a ramp fills both levels it passes between', () => {
   assert.deepEqual(trackCells(from, place(variants(ramp)[0], from)), ['1,0,2', '1,0,3']);
 });
 
-test('a loop comes back into the same side of its tower, one level down', () => {
-  const curl = { id: 'l', name: 'l', kind: 'track', shape: 'loop', drop: 1, own: 1 };
-  const out = place(variants(curl)[0], port(4, 7, 2, E));
-  assert.deepEqual(out.to, port(4, 7, 1, E));
-  assert.deepEqual(out.covers, [[5, 7]]);
+test('a curl comes back into its own tower through the perpendicular side, one level down', () => {
+  const curl = { id: 'l', name: 'l', kind: 'track', shape: 'loop', right: 1, drop: 1, own: 1 };
+  // Manual step 3-10: leaves C7 heading east, hangs over C8 and D8, re-enters C7 from the south.
+  const out = place(variants(curl)[0], port(6, 2, 2, E));
+  assert.deepEqual(out.to, port(6, 2, 1, S));
+  assert.deepEqual(out.covers, [[7, 2], [7, 3]]);
+  // Manual step 3-6: leaves H5 heading south, hangs south and south-west, re-enters from the west.
+  assert.deepEqual(place(variants(curl)[0], port(4, 7, 1, S)).to, port(4, 7, 0, W));
+});
+
+test('a left-hand curl comes back through the other side', () => {
+  const curl = { id: 'l', name: 'l', kind: 'track', shape: 'loop', right: -1, drop: 1, own: 1 };
+  assert.deepEqual(place(variants(curl)[0], port(6, 2, 2, E)).to, port(6, 2, 1, N));
 });
 
 test('every count is known for all three sets', async () => {

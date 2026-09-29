@@ -61,7 +61,9 @@ export function route(block, from) {
 // A track definition, measured tower to tower with the marble heading forward out of the
 // entry tower:
 //   shape    'straight' | 'curve' | 'uturn' | 'loop'
-//            (a loop leaves a tower and comes back into the same side of it, lower down)
+//            (a loop leaves a tower, curls round the corner and comes back into the same tower
+//            through the perpendicular side, lower down; `right` is 1 if it curls to the
+//            marble's right, -1 to the left)
 //   forward  squares forward from the entry tower to the exit tower
 //   right    squares right to the exit tower (negative = left). 0 for straights.
 //   drop     levels lower at the exit tower (0 = flat)
@@ -86,8 +88,9 @@ function baseVariant(def) {
     exit = [0, R]; heading = 2;
     for (let s = 0; s <= Math.abs(R); s++) covers.push([1, g * s]);
   } else if (def.shape === 'loop') {
-    exit = [0, 0]; heading = 2;
-    covers.push([1, 0]);
+    // Arrives heading back across the tower, so it enters through the side it curled towards.
+    exit = [0, 0]; heading = g > 0 ? 3 : 1;
+    covers.push([1, 0], [1, g]);
   } else {
     throw new Error(`Unknown track shape "${def.shape}" on ${def.id}`);
   }
@@ -179,7 +182,7 @@ export function validatePiece(def) {
   } else if (def.kind === 'track') {
     need(['straight', 'curve', 'uturn', 'loop'].includes(def.shape), 'shape must be straight, curve, uturn or loop');
     need(Number.isInteger(def.drop) && def.drop >= 0, 'drop must be a whole number, 0 or more');
-    if (def.shape === 'loop') need(def.drop > 0 && !def.forward && !def.right, 'a loop comes back into its own tower, lower down');
+    if (def.shape === 'loop') need(def.drop > 0 && !def.forward && Math.abs(def.right) === 1, 'a loop comes back into its own tower, lower down, curling right (1) or left (-1)');
     else need(Number.isInteger(def.forward) && def.forward >= (def.shape === 'uturn' ? 0 : 1), 'forward must be a whole number of squares');
     if (def.shape === 'straight') need(!def.right, 'a straight has no sideways reach');
     else if (def.shape !== 'loop') need(Number.isInteger(def.right) && def.right !== 0, 'a curve or U-turn needs a sideways reach');
