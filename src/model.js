@@ -1,0 +1,160 @@
+// Marble Rush connection model.
+//
+// Everything connects through ports. A port is one side of one block in a tower:
+//   { x, y, level, side }   side: 0 north, 1 east, 2 south, 3 west. level 0 = bottom block.
+// Blocks route the marble between their own ports (or drop it to the block below).
+// Track pieces join a port on one tower to a port on another tower. Nothing stands under them.
+// Specials sit on the board like towers and expose their own ports.
+
+export const N = 0, E = 1, S = 2, W = 3;
+export const DX = [0, 1, 0, -1];
+export const DY = [-1, 0, 1, 0];
+export const SIDE_NAMES = ['north', 'east', 'south', 'west'];
+
+// Local frame used by piece definitions: f = forward (the way the marble leaves the entry
+// tower), s = right. Local directions: 0 forward, 1 right, 2 back, 3 left.
+const LOCAL = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+// ---------------------------------------------------------------- blocks
+
+// `open` lists the open sides relative to the block's rotation r.
+// Every block is one level tall. Track pieces clip into open sides only, never the top.
+export const BLOCKS = {
+  blue:   { name: 'Blue straight block', open: [0, 2], action: 'through' },
+  red:    { name: 'Red turn block',      open: [0, 1], action: 'turn' },
+  orange: { name: 'Orange dead end',     open: [0],    action: 'stop' },    // TODO confirm: one open side?
+  clear:  { name: 'Clear drop block',    open: [0, 2], action: 'drop' },
+  white:  { name: 'White drop block',    open: [0, 2], action: 'drop' },
+};
+
+export const openSides = (block) => BLOCKS[block.t].open.map((o) => (o + block.r) % 4);
+
+// Where does a marble go after entering `block` by `from` (a side, or 'top' when it falls
+// in from a drop block above)? Returns one of:
+//   { exit: side }  leaves by that side, same level
+//   { down: true }  falls into the block below, entering it from 'top'
+//   { stop: true }  comes to rest
+//   { blocked: true } it can't get in that way
+export function route(block, from) {
+  const def = BLOCKS[block.t];
+  const open = openSides(block);
+  if (from === 'top') {
+    if (def.action === 'drop') return { down: true };
+    if (def.action === 'stop') return { stop: true };
+    // UNVERIFIED: which side a blue/red block sends a marble that falls in from above.
+    // Assume the first open side, as the prototype did.
+    return { exit: open[0] };
+  }
+  if (!open.includes(from)) return { blocked: true };
+  switch (def.action) {
+    case 'through': return { exit: (from + 2) % 4 };
+    case 'turn': return { exit: open.find((o) => o !== from) };
+    case 'drop': return { down: true };
+    default: return { stop: true };
+  }
+}
+
+// ---------------------------------------------------------------- track pieces
+
+// A track definition, measured tower to tower with the marble heading forward out of the
+// entry tower:
+//   shape    'straight' | 'curve' | 'uturn'
+//   forward  squares forward from the entry tower to the exit tower
+//   right    squares right to the exit tower (negative = left). 0 for straights.
+//   drop     levels lower at the exit tower (0 = flat)
+//   covers   optional list of [f, s] squares the piece hangs over; derived if left out
+//
+// A flat piece works either way round, so it also gives a mirror-image placement when the
+// marble enters from the other end (a right curve used backwards is a left curve).
+// A piece with a drop only works one way.
+
+// The one-way geometry, in the entry tower's local frame.
+function baseVariant(def) {
+  const F = def.forward, R = def.right ?? 0, g = Math.sign(R) || 1;
+  let exit, heading, covers = [];
+  if (def.shape === 'straight') {
+    exit = [F, 0]; heading = 0;
+    for (let f = 1; f < F; f++) covers.push([f, 0]);
+  } else if (def.shape === 'curve') {
+    exit = [F, R]; heading = g > 0 ? 1 : 3;
+    for (let f = 1; f <= F; f++) covers.push([f, 0]);
+    for (let s = 1; s < Math.abs(R); s++) covers.push([F, g * s]);
+  } else if (def.shape === 'uturn') {
+    exit = [0, R]; heading = 2;
+    for (let s = 0; s <= Math.abs(R); s++) covers.push([1, g * s]);
+  } else {
+    throw new Error(`Unknown track shape "${def.shape}" on ${def.id}`);
+  }
+  if (def.covers) covers = def.covers.map((c) => [...c]);
+  return { exit, heading, drop: def.drop, covers };
+}
+
+// Re-express a variant as seen from its exit tower, with the marble going the other way.
+function reverse(v) {
+  const nf = (v.heading + 2) % 4;
+  const [ex, es] = v.exit;
+  const to = ([f, s]) => {
+    const d = [f - ex, s - es];
+    const dot = (k) => d[0] * LOCAL[k][0] + d[1] * LOCAL[k][1];
+    return [dot(nf) + 0, dot((nf + 1) % 4) + 0];
+  };
+  return { exit: to([0, 0]), heading: (2 - nf + 4) % 4, drop: -v.drop, covers: v.covers.map(to) };
+}
+
+// Every way the marble can travel through a piece, in local terms.
+export function variants(def) {
+  const v = baseVariant(def);
+  return def.drop === 0 ? [v, reverse(v)] : [v];
+}
+
+// Local (f, s) from a tower at (x, y) whose forward direction is `dir` → grid square.
+export const toGrid = (x, y, dir, f, s) =>
+  [x + f * DX[dir] + s * DX[(dir + 1) % 4], y + f * DY[dir] + s * DY[(dir + 1) % 4]];
+
+// Place a track piece so the marble leaves `from` (a port) along it.
+// Returns the port it arrives at on the far tower and the squares it hangs over.
+export function place(v, from) {
+  const { x, y, level, side } = from;
+  const [tx, ty] = toGrid(x, y, side, ...v.exit);
+  const heading = (side + v.heading) % 4;
+  return {
+    to: { x: tx, y: ty, level: level - v.drop, side: (heading + 2) % 4 },
+    covers: v.covers.map(([f, s]) => toGrid(x, y, side, f, s)),
+  };
+}
+
+// ---------------------------------------------------------------- specials
+
+// A special definition:
+//   footprint  [[f, s], ...] squares it stands on (local frame, entry side facing back)
+//   height     levels it takes up
+//   stackable  true if blocks or other pieces can be built on top of it
+//   ports      [{ f, s, level, side, role: 'in' | 'out' }]   level is relative to its base
+//   behaviour  free text until we model it (lift, split, spinner, ...)
+
+// ---------------------------------------------------------------- validation
+
+export function validatePiece(def) {
+  const errs = [];
+  const need = (cond, msg) => { if (!cond) errs.push(`${def.id ?? '?'}: ${msg}`); };
+  need(typeof def.id === 'string' && def.id, 'needs an id');
+  need(typeof def.name === 'string' && def.name, 'needs a name');
+  need(def.own === null || (Number.isInteger(def.own) && def.own >= 0), 'own must be a whole number or null (unknown)');
+  if (def.kind === 'track') {
+    need(['straight', 'curve', 'uturn'].includes(def.shape), 'shape must be straight, curve or uturn');
+    need(Number.isInteger(def.drop) && def.drop >= 0, 'drop must be a whole number, 0 or more');
+    need(Number.isInteger(def.forward) && def.forward >= (def.shape === 'uturn' ? 0 : 1), 'forward must be a whole number of squares');
+    if (def.shape === 'straight') need(!def.right, 'a straight has no sideways reach');
+    else need(Number.isInteger(def.right) && def.right !== 0, 'a curve or U-turn needs a sideways reach');
+  } else if (def.kind === 'special') {
+    if (!def.unverified) {
+      need(Array.isArray(def.footprint) && def.footprint.length > 0, 'needs a footprint');
+      need(Number.isInteger(def.height) && def.height > 0, 'needs a height in levels');
+      need(typeof def.stackable === 'boolean', 'needs stackable true/false');
+      need(Array.isArray(def.ports) && def.ports.length > 0, 'needs ports');
+    }
+  } else {
+    errs.push(`${def.id}: kind must be track or special`);
+  }
+  return errs;
+}

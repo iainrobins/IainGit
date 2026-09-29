@@ -1,0 +1,6 @@
+{
+  "name": "marble-rush",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}
