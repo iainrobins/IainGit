@@ -190,8 +190,8 @@ export function validatePiece(def) {
       need(typeof def.stackable === 'boolean', 'needs stackable true/false');
       need(Array.isArray(def.ports) && def.ports.length > 0, 'needs ports');
     }
-  } else {
-    errs.push(`${def.id}: kind must be track or special`);
+  } else if (def.kind !== 'train' && def.kind !== 'decor') {
+    errs.push(`${def.id}: kind must be track, special, train or decor`);
   }
   return errs;
 }
