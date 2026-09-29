@@ -159,12 +159,12 @@ export function clashes(...lists) {
 // ---------------------------------------------------------------- specials
 
 // A special definition:
-//   footprint  [[f, s], ...] squares it stands on (local frame, entry side facing back)
-//   height     levels it takes up
+//   role       what it does for the route: start, finish, drop, passthrough, lift, launcher,
+//              funnel or receiver
+//   footprint  [width, depth] in squares; height in blocks
 //   stackable  true if blocks or other pieces can be built on top of it
 //              (every special can itself stand on top of a tower)
-//   ports      [{ f, s, level, side, role: 'in' | 'out' }]   level is relative to its base
-//   behaviour  free text until we model it (lift, split, spinner, ...)
+//   in, out    where the marble enters and leaves, in words until the simulator models them
 
 // ---------------------------------------------------------------- validation
 
@@ -185,13 +185,15 @@ export function validatePiece(def) {
     else if (def.shape !== 'loop') need(Number.isInteger(def.right) && def.right !== 0, 'a curve or U-turn needs a sideways reach');
   } else if (def.kind === 'special') {
     if (!def.unverified) {
-      need(Array.isArray(def.footprint) && def.footprint.length > 0, 'needs a footprint');
-      need(Number.isInteger(def.height) && def.height > 0, 'needs a height in levels');
-      need(typeof def.stackable === 'boolean', 'needs stackable true/false');
-      need(Array.isArray(def.ports) && def.ports.length > 0, 'needs ports');
+      const roles = ['start', 'finish', 'drop', 'passthrough', 'lift', 'launcher', 'funnel', 'receiver'];
+      need(roles.includes(def.role), `role must be one of ${roles.join(', ')}`);
+      need(def.footprint === null || (Array.isArray(def.footprint) && def.footprint.length === 2), 'footprint must be [width, depth] or null');
+      need(def.height === null || (Number.isInteger(def.height) && def.height > 0), 'height must be whole blocks or null');
+      need(def.stackable === null || typeof def.stackable === 'boolean', 'stackable must be true, false or null');
+      need(typeof def.in === 'string' && typeof def.out === 'string', 'needs in and out descriptions');
     }
-  } else if (def.kind !== 'train' && def.kind !== 'decor') {
-    errs.push(`${def.id}: kind must be track, special, train or decor`);
+  } else if (!['train', 'decor', 'accessory'].includes(def.kind)) {
+    errs.push(`${def.id}: kind must be track, special, accessory, train or decor`);
   }
   return errs;
 }
