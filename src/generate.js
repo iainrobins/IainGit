@@ -3,7 +3,8 @@
 // It grows the run forwards from the start funnel. At each block it picks how the marble
 // is routed, then which track piece carries it to the next tower, backtracking when
 // something doesn't fit. Towers can be reused at different levels, so one tower can carry
-// the marble several times. Fillers (blocks under the ones that route the marble) are
+// the marble several times. Track may hang past the edge of the base plates, as it can in
+// the real sets; only towers need to stand on the board. Fillers (blocks under the ones that route the marble) are
 // coloured at the end from whatever is left over.
 
 import { variants, place, openSides, trackCells, cellKey, towerCells, DX, DY } from './model.js';
@@ -17,7 +18,6 @@ export const DEFAULTS = {
   minPieces: 3,      // track pieces in the run
   maxPieces: 6,
   maxTowers: 6,
-  overhang: false,   // allow track to hang past the edge of the base plates
   include: [],       // part codes the run must use, e.g. ['T-17']
   exclude: [],       // part codes to leave out
   seed: 1,
@@ -154,7 +154,6 @@ function attemptOnce(o, rand, moves) {
       if (to.level < 0 || !inBoard(to.x, to.y)) continue;
       const toKey = `${to.x},${to.y},${to.level},${to.side}`;
       if (ports.has(toKey)) continue;
-      if (!o.overhang && placed.covers.some(([x, y]) => !inBoard(x, y))) continue;
       const cells = trackCells(port, placed);
       if (cells.some((c) => trackSpace.has(c))) continue;
       if (cells.some((c) => { const [x, y, l] = c.split(',').map(Number); const tw = towers.get(key(x, y)); return tw && (l < tw.levels.length || (tw.funnel && l < tw.levels.length + FUNNEL_HEIGHT)); })) continue;
@@ -218,8 +217,6 @@ function finish(o, towers, tracks, colorUse) {
     const side = (step.from + 2) % 4;
     const at = { x: t.x, y: t.y, level: step.level, side };
     const cell = accessorySpace({ at })[0];
-    const [cx, cy] = cell.split(',').map(Number);
-    if (!o.overhang && (cx < 0 || cy < 0 || cx >= o.width || cy >= o.depth)) continue;
     if (attached.has(`${at.x},${at.y},${at.level},${at.side}`) || taken.has(cell) || !openSides(t.blocks[step.level]).includes(side)) continue;
     design.accessories.push({ code: 'T-14', at });
     taken.add(cell);

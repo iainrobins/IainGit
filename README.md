@@ -13,7 +13,7 @@ node src/cli.js --seed 5 --json            # the design as data
 
 Options: `--seed`, `--width`, `--depth` (board squares), `--max-height` (blocks, funnel
 included), `--max-towers`, `--pieces min-max` (track pieces in the run), `--include` and
-`--exclude` (part codes), `--overhang` (let track hang past the base plates).
+`--exclude` (part codes). Track may hang past the edge of the base plates; towers can't.
 
 ## Files
 - `src/model.js`: blocks, ports, track geometry and shared 3D space.

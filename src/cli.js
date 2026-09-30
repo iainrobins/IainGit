@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generate a track and print its parts list and build steps.
-//   node src/cli.js --seed 3 --width 6 --depth 6 --max-height 6 --pieces 3-6 --include T-17 [--overhang] [--json]
+//   node src/cli.js --seed 3 --width 6 --depth 6 --max-height 6 --pieces 3-6 --include T-17 [--json]
 
 import { generate, DEFAULTS } from './generate.js';
 import { asText } from './instructions.js';
@@ -15,7 +15,6 @@ if (opt('--max-height')) o.maxHeight = Number(opt('--max-height'));
 if (opt('--max-towers')) o.maxTowers = Number(opt('--max-towers'));
 if (opt('--pieces')) { const [a, b] = opt('--pieces').split('-').map(Number); o.minPieces = a; o.maxPieces = b ?? a; }
 if (opt('--include')) o.include = opt('--include').split(',');
-if (args.includes('--overhang')) o.overhang = true;
 if (opt('--exclude')) o.exclude = opt('--exclude').split(',');
 
 const res = generate(o);

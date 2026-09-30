@@ -89,14 +89,18 @@ test('parts list counts every block', () => {
   assert.equal(counted, blocks);
 });
 
-test('track stays over the base plates unless overhang is allowed', async () => {
+
+test('track may hang past the edge of the base plates, but towers stay on it', async () => {
   const { variants, place } = await import('../src/model.js');
   const { pieces } = await import('../src/inventory.js');
+  let overhangs = 0;
   for (let seed = 1; seed <= 30; seed++) {
     const d = generate({ seed }).design;
+    for (const t of d.towers) assert.ok(t.x >= 0 && t.y >= 0 && t.x < d.width && t.y < d.depth);
     for (const tr of d.tracks) {
       const v = variants(pieces.find((p) => p.code === tr.code))[tr.variant];
-      for (const [x, y] of place(v, tr.from).covers) assert.ok(x >= 0 && y >= 0 && x < d.width && y < d.depth, `seed ${seed} ${tr.code}`);
+      if (place(v, tr.from).covers.some(([x, y]) => x < 0 || y < 0 || x >= d.width || y >= d.depth)) overhangs++;
     }
   }
+  assert.ok(overhangs > 0, 'expected some designs to use the space past the edge');
 });
