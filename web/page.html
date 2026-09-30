@@ -1,0 +1,511 @@
+<title>Marble Rush Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap" rel="stylesheet">
+<style>
+/* Layout: settings strip on top, then the design (overview picture, parts, numbered steps),
+   then the build report. One column on phones, overview beside parts on wide screens. */
+:root{
+  --bg:#EEF1F8; --card:#FFFFFF; --ink:#1C2150; --muted:#5A6189; --line:#D5DAEC; --soft:#F5F6FB;
+  --navy:#2B2F8F; --navy-ink:#FFFFFF; --glow:#FFC21A;
+  --ok:#1D8A55; --ok-bg:#E3F4EA; --bad:#B3261E; --bad-bg:#FCE8E6;
+  --canvas:#F7F8FC; --plate:#E3E7F2; --plate-edge:#C7CDE2;
+  --display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12152B; --card:#1C2040; --ink:#E8EAFA; --muted:#A5AAD0; --line:#30355E; --soft:#232852;
+  --navy:#8B91F5; --navy-ink:#0E1030; --glow:#FFC94A;
+  --ok:#5FD39A; --ok-bg:#173A2A; --bad:#FF8A80; --bad-bg:#3D1C1A;
+  --canvas:#161A36; --plate:#2A3060; --plate-edge:#3A4178; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12152B; --card:#1C2040; --ink:#E8EAFA; --muted:#A5AAD0; --line:#30355E; --soft:#232852;
+  --navy:#8B91F5; --navy-ink:#0E1030; --glow:#FFC94A;
+  --ok:#5FD39A; --ok-bg:#173A2A; --bad:#FF8A80; --bad-bg:#3D1C1A;
+  --canvas:#161A36; --plate:#2A3060; --plate-edge:#3A4178; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);padding-inline:16px;padding-block:0 56px}
+.wrap{max-width:1100px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance}
+header{padding-block:20px 12px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+h1{font-size:1.9rem;line-height:1.1}
+header p{margin:0;color:var(--muted)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.settings{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:600 .92rem var(--body);background:var(--card);color:var(--ink);border:0;padding:7px 14px;cursor:pointer}
+.seg button+button{border-left:1.5px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:var(--navy-ink)}
+label{display:flex;flex-direction:column;gap:3px;font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.02em}
+input,select,textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--soft);border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+input[type=number]{width:5.2em;font-variant-numeric:tabular-nums}
+textarea{width:100%;min-height:70px;resize:vertical}
+.btn{font:700 .95rem var(--body);border-radius:10px;padding:9px 16px;cursor:pointer;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
+.btn:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+details summary{cursor:pointer;font-weight:700;color:var(--muted);font-size:.9rem}
+details[open] summary{margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:3px 10px 3px 4px;background:var(--card);cursor:pointer;font-size:.85rem;font-weight:600;color:var(--ink)}
+.chip img{width:26px;height:26px;object-fit:contain;background:#fff;border-radius:50%}
+.chip[aria-pressed="true"]{border-color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--navy)}
+.summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-block:18px 10px}
+.summary h2{font-size:1.4rem}
+.pill{font-size:.78rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:4px 10px}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.facts{color:var(--muted);font-variant-numeric:tabular-nums}
+.top{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;align-items:start}
+.view{position:relative}
+.view canvas{display:block;width:100%;height:auto;border-radius:10px;background:var(--canvas)}
+.viewbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.viewbar h3{font-size:1.1rem}
+.parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.part{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:10px;padding:6px 8px;min-width:0}
+.part img{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:8px;flex:0 0 auto}
+.part b{font-variant-numeric:tabular-nums;font-size:1.05rem}
+.part span{font-size:.8rem;color:var(--muted);line-height:1.2;display:block}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:14px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.step.done{opacity:.6}
+.stephead{display:flex;align-items:flex-start;gap:10px}
+.num{flex:0 0 auto;width:32px;height:32px;border-radius:9px;background:var(--navy);color:var(--navy-ink);font:600 1.05rem/32px var(--display);text-align:center;font-variant-numeric:tabular-nums}
+.step h3{font-size:1.05rem;line-height:1.25;flex:1;min-width:0}
+.step canvas{width:100%;height:auto;border-radius:9px;background:var(--canvas)}
+.step p{margin:0}
+.step ul{margin:0;padding-left:18px}
+.step li{margin:2px 0}
+.stepimg{display:flex;gap:8px;align-items:center}
+.stepimg img{width:54px;height:54px;object-fit:contain;background:#fff;border-radius:8px;flex:0 0 auto}
+.tick{flex-direction:row;align-items:center;gap:6px;font-size:.85rem;color:var(--muted);cursor:pointer;margin-top:auto}
+.tick input{width:18px;height:18px}
+.problems{background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:10px 12px;margin-top:10px}
+.report{margin-top:22px;display:flex;flex-direction:column;gap:10px}
+.report h2{font-size:1.3rem}
+.report .row>label{flex:1 1 200px}
+.report select{width:100%}
+.msg{font-size:.9rem;color:var(--muted)}
+.history{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.history li{background:var(--soft);border-radius:9px;padding:8px 10px;font-size:.9rem}
+.history b{font-weight:700}
+.empty{color:var(--muted);font-size:.9rem}
+@media (max-width:760px){.top{grid-template-columns:1fr}.steps{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Marble Rush builder</h1>
+  <p>Designs a track from the pieces we own, tests it, and shows how to build it.</p>
+</header>
+
+<form class="panel settings" id="settings">
+  <div class="row">
+    <div class="seg" role="group" aria-label="Size" id="size">
+      <button type="button" data-size="small" aria-pressed="true">Small</button>
+      <button type="button" data-size="medium" aria-pressed="false">Medium</button>
+      <button type="button" data-size="large" aria-pressed="false">Large</button>
+    </div>
+    <label for="seed">Design number<input type="number" id="seed" min="1" max="999999" value="1"></label>
+    <button class="btn primary" type="submit" id="go">Make this design</button>
+    <button class="btn" type="button" id="another">Try another</button>
+  </div>
+  <details>
+    <summary>More settings</summary>
+    <div class="row">
+      <label for="width">Board across<input type="number" id="width" min="3" max="12"></label>
+      <label for="depth">Board deep<input type="number" id="depth" min="3" max="12"></label>
+      <label for="maxHeight">Tallest tower<input type="number" id="maxHeight" min="3" max="12"></label>
+      <label for="minPieces">Fewest track<input type="number" id="minPieces" min="1" max="20"></label>
+      <label for="maxPieces">Most track<input type="number" id="maxPieces" min="1" max="20"></label>
+      <label for="maxTowers">Most towers<input type="number" id="maxTowers" min="2" max="20"></label>
+    </div>
+    <p class="msg" style="margin:12px 0 6px">Must use these pieces:</p>
+    <div class="chips" id="include"></div>
+  </details>
+</form>
+
+<div id="out"></div>
+
+<section class="panel report" id="report" hidden>
+  <h2>How did the build go?</h2>
+  <p class="msg" style="margin:0">Tell me what happened when you built it. I'll use it to fix the generator.</p>
+  <div class="row">
+    <label for="result">Result<select id="result">
+      <option value="">Choose…</option>
+      <option value="worked">It worked first time</option>
+      <option value="fixed">It worked after a small fix</option>
+      <option value="failed">It didn't work</option>
+      <option value="gave-up">We couldn't build it</option>
+    </select></label>
+    <label for="step">Where it went wrong<select id="step"><option value="">Nowhere / not sure</option></select></label>
+  </div>
+  <label for="notes">What happened<textarea id="notes" placeholder="e.g. the marble jumped out of the U-turn at step 7"></textarea></label>
+  <div class="row" style="align-items:center"><button class="btn primary" type="button" id="save">Save report</button><span class="msg" id="saveMsg"></span></div>
+  <h3 style="font-size:1.05rem;margin-top:6px">Earlier reports</h3>
+  <ul class="history" id="history"><li class="empty">None yet.</li></ul>
+</section>
+</div>
+
+<script>
+/*__BUNDLE__*/
+</script>
+<script>
+(function () {
+const IMG = "__IMAGES__";
+const { generate, DEFAULTS, usableTrack } = __m.generate;
+const { instructions } = __m.instructions;
+const { variants, place, openSides, DX, DY } = __m.model;
+const { pieces: PIECES, blocks: BLOCKS } = __m.inventory;
+const { squareName, FUNNEL_HEIGHT } = __m.simulate;
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const NAMES = Object.fromEntries([...PIECES, ...BLOCKS].map((p) => [p.code, p.name]));
+const COLOR_CODE = { blue: 'B-01', orange: 'B-02', white: 'B-03', clear: 'B-04', red: 'B-05' };
+
+const SIZES = {
+  small:  { width: 6,  depth: 6,  maxHeight: 6,  minPieces: 3, maxPieces: 6,  maxTowers: 6 },
+  medium: { width: 8,  depth: 8,  maxHeight: 8,  minPieces: 6, maxPieces: 9,  maxTowers: 9 },
+  large:  { width: 10, depth: 10, maxHeight: 10, minPieces: 9, maxPieces: 14, maxTowers: 14 },
+};
+const FIELDS = ['width', 'depth', 'maxHeight', 'minPieces', 'maxPieces', 'maxTowers'];
+const include = new Set();
+let current = null; // { key, opts, design, steps }
+let rot = 0;
+let db = null;
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+// ---------------------------------------------------------------- settings
+function setSize(name) {
+  document.querySelectorAll('#size button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.size === name)));
+  for (const f of FIELDS) $('#' + f).value = SIZES[name][f];
+}
+$('#size').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { setSize(b.dataset.size); make(); } });
+const codes = [...new Set(usableTrack().map((m) => m.code))];
+$('#include').innerHTML = codes.map((c) => `<button type="button" class="chip" data-code="${c}" aria-pressed="false"><img src="${IMG[c] || ''}" alt="">${esc(NAMES[c])}</button>`).join('');
+$('#include').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const on = !include.has(b.dataset.code);
+  on ? include.add(b.dataset.code) : include.delete(b.dataset.code);
+  b.setAttribute('aria-pressed', String(on));
+});
+$('#settings').addEventListener('submit', (e) => { e.preventDefault(); make(); });
+$('#another').addEventListener('click', () => { $('#seed').value = 1 + Math.floor(Math.random() * 99999); make(); });
+
+function readOpts() {
+  const o = { seed: Math.max(1, Number($('#seed').value) || 1), include: [...include] };
+  for (const f of FIELDS) o[f] = Number($('#' + f).value) || DEFAULTS[f];
+  if (o.maxPieces < o.minPieces) o.maxPieces = o.minPieces;
+  return o;
+}
+const keyOf = (o) => `n${o.seed}-${o.width}x${o.depth}-h${o.maxHeight}-p${o.minPieces}-${o.maxPieces}-t${o.maxTowers}${o.include.length ? '-' + o.include.sort().join('.') : ''}`;
+
+// ---------------------------------------------------------------- make a design
+function make() {
+  const opts = readOpts();
+  $('#go').disabled = true;
+  $('#out').innerHTML = '<p class="msg" style="margin-top:18px">Designing…</p>';
+  setTimeout(() => {
+    const res = generate(opts);
+    $('#go').disabled = false;
+    if (!res.ok) {
+      current = null;
+      $('#out').innerHTML = `<div class="problems" style="margin-top:18px">${esc(res.reason)}</div>`;
+      $('#report').hidden = true;
+      return;
+    }
+    const { steps, parts, run } = instructions(res.design);
+    current = { key: keyOf(opts), opts, design: res.design, steps, parts, run };
+    render();
+  }, 20);
+}
+
+// ---------------------------------------------------------------- page
+function render() {
+  const { design, steps, parts, run, key } = current;
+  const tallest = Math.max(...design.towers.map((t) => t.blocks.length + (t.top ? FUNNEL_HEIGHT : 0)));
+  const nParts = Object.values(parts).reduce((a, n) => a + n, 0);
+  const done = store.get('done:' + key, []);
+  const partRows = Object.entries(parts).sort().map(([code, n]) =>
+    `<div class="part"><img src="${IMG[code] || ''}" alt=""><div><b>${n} ×</b> <span>${esc(NAMES[code] || code)} · ${code}</span></div></div>`).join('');
+  $('#out').innerHTML = `
+    <div class="summary">
+      <h2>Design ${current.opts.seed}</h2>
+      <span class="pill ${run.ok ? 'ok' : 'bad'}">${run.ok ? 'Test run passed' : 'Test run failed'}</span>
+      <span class="facts">${design.width}×${design.depth} board · ${design.towers.length} towers · ${tallest} blocks tall · ${design.tracks.length} track pieces · ${nParts} parts</span>
+    </div>
+    ${run.ok ? '' : `<div class="problems">${run.problems.map(esc).join('<br>')}</div>`}
+    <div class="top">
+      <div class="panel view">
+        <div class="viewbar"><h3>Finished track</h3><button class="btn" type="button" id="turn">Turn view</button></div>
+        <canvas id="overview" aria-label="3D picture of the finished track"></canvas>
+      </div>
+      <div class="panel"><div class="viewbar"><h3>Parts</h3></div><div class="parts">${partRows}</div></div>
+    </div>
+    <div class="steps">${steps.map((s, i) => stepCard(s, i, done.includes(i))).join('')}</div>`;
+  $('#turn').addEventListener('click', () => { rot = (rot + 1) % 4; drawAll(); });
+  document.querySelectorAll('.tick input').forEach((cb) => cb.addEventListener('change', () => {
+    const i = Number(cb.dataset.i);
+    const d = new Set(store.get('done:' + key, []));
+    cb.checked ? d.add(i) : d.delete(i);
+    store.set('done:' + key, [...d]);
+    cb.closest('.step').classList.toggle('done', cb.checked);
+  }));
+  $('#step').innerHTML = '<option value="">Nowhere / not sure</option>' + steps.map((s, i) => `<option value="${i + 1}">Step ${i + 1}: ${esc(s.title)}</option>`).join('');
+  $('#report').hidden = false;
+  $('#saveMsg').textContent = '';
+  drawAll();
+  showHistory();
+}
+
+function stepImg(s) {
+  if (s.adds.track != null) return current.design.tracks[s.adds.track].code;
+  if (s.adds.funnel) return 'M-03';
+  if (s.adds.accessory != null) return current.design.accessories[s.adds.accessory].code;
+  return null;
+}
+function stepCard(s, i, done) {
+  const img = stepImg(s);
+  const body = `${s.text ? `<p>${esc(s.text)}</p>` : ''}${s.items ? `<ul>${s.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul>` : ''}`;
+  return `<article class="step${done ? ' done' : ''}">
+    <div class="stephead"><div class="num">${i + 1}</div><h3>${esc(s.title)}</h3></div>
+    <canvas data-step="${i}" aria-label="Picture of the build after step ${i + 1}"></canvas>
+    ${img ? `<div class="stepimg"><img src="${IMG[img] || ''}" alt="${esc(NAMES[img])}"><div>${body}</div></div>` : body}
+    <label class="tick"><input type="checkbox" data-i="${i}"${done ? ' checked' : ''}> Done</label>
+  </article>`;
+}
+
+// ---------------------------------------------------------------- 3D pictures
+const BLOCK_COLOR = { blue: '#4DA6DE', orange: '#EF7D22', white: '#F2F2F4', clear: '#CFE6F5', red: '#E0323C' };
+const TRACK_COLOR = { 'T-02': '#EF7D22', 'T-03': '#EF7D22', 'T-04': '#E0323C', 'T-05': '#86C43F', 'T-06': '#2F5FC4', 'T-07': '#2F5FC4', 'T-08': '#E0323C', 'T-17': '#86C43F' };
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue('--' + v).trim();
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.max(0, Math.min(255, Math.round(v * f))));
+  return `rgb(${c.join(',')})`;
+}
+
+// What exists after step `upto`, and what that step added.
+function sceneAt(upto) {
+  const { design, steps } = current;
+  const blocks = new Set(), tracks = new Set(), acc = new Set(), funnels = new Set();
+  let base = false;
+  const add = (a, into) => {
+    if (a.base) into.base = true;
+    (a.blocks || []).forEach(([x, y, l]) => into.blocks.add(`${x},${y},${l}`));
+    if (a.funnel) into.funnels.add(a.funnel.join(','));
+    if (a.track != null) into.tracks.add(a.track);
+    if (a.accessory != null) into.acc.add(a.accessory);
+  };
+  const have = { base: false, blocks, tracks, acc, funnels };
+  const fresh = { base: false, blocks: new Set(), tracks: new Set(), acc: new Set(), funnels: new Set() };
+  for (let i = 0; i <= upto && i < steps.length; i++) add(steps[i].adds, have);
+  if (upto < steps.length) add(steps[upto].adds, fresh);
+  return { have, fresh };
+}
+
+function trackPath(tr) {
+  const def = PIECES.find((p) => p.code === tr.code);
+  const placed = place(variants(def)[tr.variant], tr.from);
+  const edge = (p) => [p.x + 0.5 + DX[p.side] * 0.5, p.y + 0.5 + DY[p.side] * 0.5];
+  const start = edge(tr.from), end = edge(placed.to);
+  // Walk the covered squares nearest-first, so reversed pieces draw in marble order.
+  const left = placed.covers.map(([x, y]) => [x + 0.5, y + 0.5]);
+  const pts = [start];
+  while (left.length) {
+    const last = pts[pts.length - 1];
+    let bi = 0, bd = Infinity;
+    left.forEach((p, i) => { const d = (p[0] - last[0]) ** 2 + (p[1] - last[1]) ** 2; if (d < bd) { bd = d; bi = i; } });
+    pts.push(left.splice(bi, 1)[0]);
+  }
+  pts.push(end);
+  const z0 = tr.from.level + 0.78, z1 = placed.to.level + 0.78;
+  let out = pts.map((p, i) => [p[0], p[1], z0 + (z1 - z0) * (i / (pts.length - 1))]);
+  for (let k = 0; k < 3; k++) { // Chaikin smoothing, keeping the ends
+    const n = [out[0]];
+    for (let i = 0; i < out.length - 1; i++) {
+      const a = out[i], b = out[i + 1];
+      n.push(a.map((v, j) => v * 0.75 + b[j] * 0.25), a.map((v, j) => v * 0.25 + b[j] * 0.75));
+    }
+    n.push(out[out.length - 1]);
+    out = n;
+  }
+  return out;
+}
+
+function draw(canvas, upto, overview) {
+  const { design } = current;
+  const W = design.width, D = design.depth;
+  const cssW = canvas.parentElement.clientWidth - (overview ? 28 : 0);
+  if (cssW <= 0) return;
+  const { have, fresh } = overview ? { have: sceneAt(Infinity).have, fresh: null } : sceneAt(upto);
+  const cx = W / 2, cy = D / 2;
+  const R = [[1, 0], [0, 1], [-1, 0], [0, -1]][rot];
+  const rotp = (x, y) => { const dx = x - cx, dy = y - cy; return [cx + dx * R[0] - dy * R[1], cy + dx * R[1] + dy * R[0]]; };
+  const TW = 40, TH = 20, BH = 19;
+  const proj = (x, y, z) => { const [u, v] = rotp(x, y); return [(u - v) * TW / 2, (u + v) * TH / 2 - z * BH]; };
+  // Fit to what's actually there: the board, every tower top and every track point.
+  const xs = [], ys = [];
+  const fit = (x, y, z) => { const p = proj(x, y, z); xs.push(p[0]); ys.push(p[1]); };
+  for (const [x, y] of [[-0.9, -0.9], [W + 0.3, -0.9], [W + 0.3, D + 0.3], [-0.9, D + 0.3]]) fit(x, y, 0);
+  for (const t of design.towers) { const h = t.blocks.length + (t.top ? FUNNEL_HEIGHT + 0.3 : 0); for (const [dx, dy] of [[0, 0], [1, 0], [1, 1], [0, 1]]) fit(t.x + dx, t.y + dy, h); }
+  for (const tr of design.tracks) for (const [x, y, z] of trackPath(tr)) { fit(x - 0.3, y - 0.3, z + 0.3); fit(x + 0.3, y + 0.3, z - 0.3); }
+  for (const a of design.accessories) fit(a.at.x + 0.5 + DX[a.at.side], a.at.y + 0.5 + DY[a.at.side], a.at.level + 1);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const pad = 10;
+  const scale = (cssW - 2 * pad) / (maxX - minX);
+  const cssH = (maxY - minY) * scale + 2 * pad;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.height = cssH + 'px';
+  canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, (pad - minX * scale) * dpr, (pad - minY * scale) * dpr);
+  const P = (x, y, z) => proj(x, y, z);
+  const poly = (pts, fill, stroke, lw = 1) => { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); } };
+  const glow = css('glow');
+
+  // Base plates and labels
+  for (let y = 0; y < D; y++) for (let x = 0; x < W; x++) {
+    poly([P(x, y, 0), P(x + 1, y, 0), P(x + 1, y + 1, 0), P(x, y + 1, 0)], css('plate'), css('plate-edge'), 1);
+  }
+  ctx.fillStyle = css('muted'); ctx.font = '600 11px "Nunito Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let y = 0; y < D; y++) { const p = P(-0.45, y + 0.5, 0); ctx.fillText(String.fromCharCode(65 + y), p[0], p[1]); }
+  for (let x = 0; x < W; x++) { const p = P(x + 0.5, -0.45, 0); ctx.fillText(String(x + 1), p[0], p[1]); }
+
+  // Everything else, back to front
+  const items = [];
+  const depthOf = (x, y) => { const [u, v] = rotp(x, y); return u + v; };
+  for (const t of design.towers) {
+    t.blocks.forEach((b, l) => {
+      const k = `${t.x},${t.y},${l}`;
+      if (!have.blocks.has(k)) return;
+      items.push({ d: depthOf(t.x + 0.5, t.y + 0.5), z: l, draw: () => cube(t.x, t.y, l, b, fresh && fresh.blocks.has(k)) });
+    });
+    if (t.top && have.funnels.has(`${t.x},${t.y}`)) {
+      const h = t.blocks.length;
+      items.push({ d: depthOf(t.x + 0.5, t.y + 0.5), z: h, draw: () => funnel(t.x, t.y, h, fresh && fresh.funnels.has(`${t.x},${t.y}`)) });
+    }
+  }
+  design.tracks.forEach((tr, i) => {
+    if (!have.tracks.has(i)) return;
+    const pts = trackPath(tr);
+    const isNew = fresh && fresh.tracks.has(i);
+    for (let j = 0; j < pts.length - 1; j++) {
+      const a = pts[j], b = pts[j + 1];
+      items.push({ d: depthOf((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) + 0.02, z: (a[2] + b[2]) / 2, draw: () => seg(a, b, TRACK_COLOR[tr.code] || '#888', isNew) });
+    }
+  });
+  design.accessories.forEach((a, i) => {
+    if (!have.acc.has(i)) return;
+    const x = a.at.x + 0.5 + DX[a.at.side] * 0.62, y = a.at.y + 0.5 + DY[a.at.side] * 0.62;
+    items.push({ d: depthOf(x, y), z: a.at.level, draw: () => scoop(x, y, a.at.level, fresh && fresh.acc.has(i)) });
+  });
+  items.sort((p, q) => p.d - q.d || p.z - q.z);
+  const faded = !overview;
+  for (const it of items) it.draw();
+
+  function cube(x, y, l, b, isNew) {
+    const i = 0.08;
+    const c = [[x + i, y + i], [x + 1 - i, y + i], [x + 1 - i, y + 1 - i], [x + i, y + 1 - i]].map(([gx, gy]) => ({ g: [gx, gy], v: rotp(gx, gy) }));
+    let fi = 0; c.forEach((p, k) => { if (p.v[0] + p.v[1] > c[fi].v[0] + c[fi].v[1]) fi = k; });
+    const L = c[(fi + 3) % 4], F = c[fi], Rr = c[(fi + 1) % 4];
+    const col = BLOCK_COLOR[b.t];
+    ctx.globalAlpha = faded && !isNew ? 0.45 : 1;
+    const edge = 'rgba(28,33,80,.35)';
+    poly([P(...L.g, l + 1), P(...F.g, l + 1), P(...F.g, l), P(...L.g, l)], shade(col, 0.82), edge);
+    poly([P(...F.g, l + 1), P(...Rr.g, l + 1), P(...Rr.g, l), P(...F.g, l)], shade(col, 0.66), edge);
+    poly(c.map((p) => P(...p.g, l + 1)), col, isNew ? glow : edge, isNew ? 3 : 1);
+    if (!b.filler) channel(x, y, l + 1, b);
+    ctx.globalAlpha = 1;
+  }
+  function channel(x, y, z, b) {
+    const open = openSides(b);
+    const mid = P(x + 0.5, y + 0.5, z);
+    ctx.strokeStyle = b.t === 'white' || b.t === 'clear' ? '#8A93B8' : 'rgba(255,255,255,.85)';
+    ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    for (const s of open) { const e = P(x + 0.5 + DX[s] * 0.36, y + 0.5 + DY[s] * 0.36, z); ctx.beginPath(); ctx.moveTo(mid[0], mid[1]); ctx.lineTo(e[0], e[1]); ctx.stroke(); }
+    if (b.t === 'white' || b.t === 'clear' || b.t === 'orange') { ctx.fillStyle = b.t === 'orange' ? 'rgba(255,255,255,.85)' : '#8A93B8'; ctx.beginPath(); ctx.arc(mid[0], mid[1], 2.6, 0, Math.PI * 2); ctx.fill(); }
+  }
+  function funnel(x, y, h, isNew) {
+    ctx.globalAlpha = faded && !isNew ? 0.45 : 1;
+    const ring = (z, r) => { const pts = []; for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; pts.push(P(x + 0.5 + Math.cos(a) * r, y + 0.5 + Math.sin(a) * r, z)); } return pts; };
+    const bot = ring(h, 0.2), top = ring(h + FUNNEL_HEIGHT, 0.62);
+    poly([...bot.slice(0, 9), ...top.slice(0, 9).reverse()], '#76B83A', 'rgba(28,33,80,.35)');
+    poly(top, '#9BD35A', isNew ? glow : 'rgba(28,33,80,.35)', isNew ? 3 : 1);
+    poly(ring(h + FUNNEL_HEIGHT - 0.05, 0.3), '#5E9B2A');
+    ctx.globalAlpha = 1;
+  }
+  function seg(a, b, col, isNew) {
+    const p = P(...a), q = P(...b);
+    ctx.globalAlpha = faded && !isNew ? 0.45 : 1;
+    ctx.lineCap = 'round';
+    if (isNew) { ctx.strokeStyle = glow; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(28,33,80,.45)'; ctx.lineWidth = 8.5; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    ctx.strokeStyle = col; ctx.lineWidth = 6.5; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  function scoop(x, y, l, isNew) {
+    const p = P(x, y, l + 0.7);
+    ctx.globalAlpha = faded && !isNew ? 0.45 : 1;
+    ctx.fillStyle = '#F2C230'; ctx.strokeStyle = isNew ? glow : 'rgba(28,33,80,.45)'; ctx.lineWidth = isNew ? 3 : 1;
+    ctx.beginPath(); ctx.ellipse(p[0], p[1], 7, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawAll() {
+  if (!current) return;
+  draw($('#overview'), Infinity, true);
+  document.querySelectorAll('canvas[data-step]').forEach((c) => draw(c, Number(c.dataset.step), false));
+}
+let rt;
+window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 150); });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawAll);
+
+// ---------------------------------------------------------------- build reports
+$('#save').addEventListener('click', async () => {
+  if (!current) return;
+  const result = $('#result').value;
+  if (!result) { $('#saveMsg').textContent = 'Choose a result first.'; return; }
+  if (!db) { $('#saveMsg').textContent = "Reports can't be saved in this view."; return; }
+  $('#save').disabled = true; $('#saveMsg').textContent = 'Saving…';
+  try {
+    await db.collection('builds').add({
+      design: current.key, settings: current.opts, result,
+      step: $('#step').value ? Number($('#step').value) : null,
+      notes: $('#notes').value.trim(), createdAt: new Date().toISOString(),
+    });
+    $('#saveMsg').textContent = 'Saved. Thanks!';
+    $('#notes').value = ''; $('#result').value = ''; $('#step').value = '';
+  } catch (err) {
+    $('#saveMsg').textContent = err && err.code === 'permission_denied' ? "You don't have permission to save reports here." : "Didn't save. Try again.";
+  } finally { $('#save').disabled = false; }
+});
+let reports = [];
+const RESULT = { worked: 'Worked first time', fixed: 'Worked after a fix', failed: "Didn't work", 'gave-up': "Couldn't build it" };
+function showHistory() {
+  const el = $('#history');
+  if (!db) { el.innerHTML = '<li class="empty">Reports need the saved version of this page.</li>'; return; }
+  if (!reports.length) { el.innerHTML = '<li class="empty">None yet. Build a design and tell me how it went.</li>'; return; }
+  el.innerHTML = reports.slice(0, 12).map((r) => `<li><b>${esc(RESULT[r.result] || r.result)}</b> · design ${esc(r.settings?.seed)} (${esc(r.settings?.width)}×${esc(r.settings?.depth)})${r.step ? ` · step ${esc(r.step)}` : ''}${r.notes ? `<br>${esc(r.notes)}` : ''}</li>`).join('');
+}
+
+// ---------------------------------------------------------------- start
+setSize('small');
+make();
+(async () => {
+  db = window.claude ? await window.claude.use('db') : null;
+  if (!db) { showHistory(); return; }
+  db.collection('builds').orderBy('createdAt', 'desc').limit(50).onSnapshot((snap) => {
+    reports = snap.docs.map((d) => d.data());
+    showHistory();
+  }, () => { $('#history').innerHTML = '<li class="empty">Couldn\'t load reports. Reload to try again.</li>'; });
+})();
+})();
+</script>

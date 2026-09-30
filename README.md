@@ -15,6 +15,12 @@ Options: `--seed`, `--width`, `--depth` (board squares), `--max-height` (blocks,
 included), `--max-towers`, `--pieces min-max` (track pieces in the run), `--include` and
 `--exclude` (part codes). Track may hang past the edge of the base plates; towers can't.
 
+## Web page
+`node scripts/build-page.mjs` bundles `src/` and the piece pictures in `web/img/` into
+`dist/marble-rush.html`, a single page that makes designs, draws a 3D picture for every build
+step, and saves build reports. It runs the same generator and test run as the command line.
+The published copy lives at https://claude.ai/artifact/74jdTzJV9wmjNR88C72dFW.
+
 ## Files
 - `src/model.js`: blocks, ports, track geometry and shared 3D space.
 - `src/inventory.js`: every part we own, by VTech code, with what's measured and what isn't.
